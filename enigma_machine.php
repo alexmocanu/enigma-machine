@@ -4,9 +4,13 @@
 //https://www.youtube.com/watch?v=UKbP3Rjxhy0
 class Enigma {
 
+    //Input/Output Panel
     protected $inputOutput = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"];
+    
+    //Redirects a signal back into the rotor system (io/panel->rotors-reflector->rotors again->io/panel)
     protected $reflector = ["A", "B", "C", "D", "E", "F", "G", "D", "I", "J", "K", "G", "M", "K", "M", "I", "E", "B", "F", "T", "C", "V", "V", "J", "A", "T"];
 
+    //Rotor configuration, hardcoded for convenience
     protected $rotors = [
         [
             ["A", "E"], ["B", "K"], ["C", "M"], ["D", "F"], ["E", "L"], ["F", "G"], ["G", "D"], ["H", "Q"], ["I", "V"], ["J", "Z"], ["K", "N"], ["L", "T"],
@@ -24,7 +28,10 @@ class Enigma {
         ]
     ];
     
+    //When a rotor reaches one of these positions the one next to it advances one position, just like in a mechanical counter
     protected $flip = ["Q", "E", "V"];
+    
+    //encryption key - array containing a letter for each rotor - basically the initial position of each rotor    
     protected $key;
 
     public function __construct($key) {
@@ -32,7 +39,7 @@ class Enigma {
     }
 
     /**
-     * Rotate the rotors until the key letters are at the top
+     * Rotate the rotors until the encryption key letters are at the top
      * I know it can be done better, but I wanted to emulate the real process as close as possible
      */
     public function configureRotors() {
@@ -46,16 +53,20 @@ class Enigma {
     }
     
     /*
-     * Each letter passes through the rotors, bounces of the reflector back through the rotors all the way to the output.
+     * On the actual machine each letter signal starts at the keyboard, goes through the rotors from right to left, bounces off the reflector back into the rotors, this time from left to right, until it reaches the output panel (a set of lights)
      * In our case the input and output panels are the same.
-     * Before we encode a letter we advance the last rotor one step and propagate to the others if needed
+     * 
+     * Before we encode a letter we advance the rightmost rotor one step and propagate to the others if needed, similar to a mechanical counter.
+     * The rightmost rotor (near the i/o panel) always advances one position before encoding a letter. 
+     * The other rotors advance one position from right to left only when the rotor on their right reaches the flip position.
+     *
      * Same as above, it can be done better, but I wanted to emulate the real process as close as possible
      */
     public function passLetter($letter) {
         
         $this->advanceRotors();
         
-        //echo "Intrat: ".$letter."\n";
+        //echo "Input: ".$letter."\n";
         
         $countRotors = count($this->rotors);
         $countLetters = count($this->rotors[0]);
@@ -67,7 +78,7 @@ class Enigma {
             }
         }
         
-        //echo "Key on input = ".$keyOnInput."\n";        
+        //echo "Position on input panel = ".$keyOnInput."\n";        
         
         $currentPosition = $keyOnInput;
         for($numRotor=$countRotors-1;$numRotor>=0;$numRotor--) {
@@ -143,7 +154,7 @@ class Enigma {
         }
     }
 
-    //Advances the last rotor one step and propagates to the others if needed
+    //Advances the rightmost rotor one step and propagates to the others if needed from right to left
     public function advanceRotors() {
         
         $countRotors = count($this->rotors);
@@ -155,10 +166,12 @@ class Enigma {
         }
     }
     
+    //Rotate a rotor
     public function advanceRotor($rotor) {
         $this->rotors[$rotor][] =  array_shift($this->rotors[$rotor]);
     }
     
+    //Translate a message    
     public function translate($message) {
         $this->configureRotors();
         $result = "";
